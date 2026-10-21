@@ -1,0 +1,62 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "版本号（必须与 pom.xml 一致，如 0.1.0）"
+        required: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: 校验 tag 与 pom 版本一致
+        run: |
+          pom=$(mvn -B -ntp -q help:evaluate -Dexpression=project.version -DforceStdout)
+          tag="${GITHUB_REF_NAME#v}"
+          if [ -n "${{ inputs.version }}" ]; then tag="${{ inputs.version }}"; fi
+          if [ "$pom" != "$tag" ]; then
+            echo "pom version $pom != tag $tag" >&2
+            exit 1
+          fi
+
+      - name: 导入 GPG 私钥
+        run: |
+          mkdir -p ~/.gnupg && chmod 700 ~/.gnupg
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
+          gpg --list-secret-keys --keyid-format=long
+
+      - name: 写 settings.xml（Central token）
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml <<XML
+          <settings>
+            <servers>
+              <server>
+                <id>central</id>
+                <username>${{ secrets.MAVEN_CENTRAL_USERNAME }}</username>
+                <password>${{ secrets.MAVEN_CENTRAL_PASSWORD }}</password>
+              </server>
+            </servers>
+          </settings>
+          XML
+          chmod 600 ~/.m2/settings.xml
+
+      - name: 发布到 Central Portal
+        run: mvn -B -ntp -P release deploy -DskipTests
+        env:
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: 提示下一步
+        run: |
+          echo "bundle 已上传。到 https://central.sonatype.com → Deployments 点 Publish（或把 autoPublish 设为 true）。"

@@ -1,0 +1,21 @@
+{
+  "atomCode": "example-greeter",
+  "name": "示例问候插件",
+  "version": "1.0.0",
+  "execution": {
+    "packagePath": "example.jar",
+    "language": "java",
+    "target": "$bk_java_path -cp example.jar:jenkins-atom-sdk.jar io.github.hummerstudio.atom.sdk.AtomRunner"
+  },
+  "input": {
+    "msg": {"label": "问候语", "type": "vuex-input", "default": "hello", "required": true},
+    "count": {"label": "次数", "type": "vuex-input-number", "default": "1"}
+  },
+  "output": {
+    "greeting": {"type": "string", "description": "实际使用的问候语"}
+  },
+  "x-jenkins": {
+    "protocol": "jenkins-1",
+    "secrets": {"deployToken": "demo-token"}
+  }
+}

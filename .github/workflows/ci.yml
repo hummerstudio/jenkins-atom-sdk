@@ -1,0 +1,35 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+    tags-ignore: ["**"]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Tests
+        run: mvn -B -ntp verify
+
+      - name: Contract check (files in, files out)
+        run: |
+          mvn -B -ntp -q package
+          mvn -B -ntp -q -f example/pom.xml package
+          ./e2e.sh
+
+      - name: Release profile resolves sources, javadoc and the Central publisher
+        run: mvn -B -ntp -P release -Dgpg.skip=true package
+      - name: Assert release artifacts exist
+        run: |
+          ls -l target/*.jar
+          test -f target/jenkins-atom-sdk-0.1.0-sources.jar
+          test -f target/jenkins-atom-sdk-0.1.0-javadoc.jar
