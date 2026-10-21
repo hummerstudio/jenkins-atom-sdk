@@ -1,9 +1,9 @@
-package io.github.hummerstudio.atom.example;
+package com.jenkinschina.atom.example;
 
-import io.github.hummerstudio.atom.sdk.AtomContext;
-import io.github.hummerstudio.atom.sdk.AtomResult;
-import io.github.hummerstudio.atom.sdk.AtomService;
-import io.github.hummerstudio.atom.sdk.AtomTask;
+import com.jenkinschina.atom.sdk.AtomContext;
+import com.jenkinschina.atom.sdk.AtomResult;
+import com.jenkinschina.atom.sdk.AtomService;
+import com.jenkinschina.atom.sdk.AtomTask;
 import java.nio.file.Files;
 import java.nio.file.Path;
 

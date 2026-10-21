@@ -14,8 +14,8 @@ printf '{"msg":"hello from sdk","count":"2","bkWorkspace":"%s"}' "$WORK/ws" > "$
 printf '{"deployToken":"s3cr3t-123"}' > "$WORK/run/.secrets.json"
 
 bk_data_dir="$WORK/run" bk_data_input=input.json bk_data_output=output.json \
-  "${JAVA_HOME:-}/bin/java" -cp "$EXAMPLE_JAR:$SDK_JAR" io.github.hummerstudio.atom.sdk.AtomRunner 2>/dev/null \
-  || java -cp "$EXAMPLE_JAR:$SDK_JAR" io.github.hummerstudio.atom.sdk.AtomRunner
+  "${JAVA_HOME:-}/bin/java" -cp "$EXAMPLE_JAR:$SDK_JAR" com.jenkinschina.atom.sdk.AtomRunner 2>/dev/null \
+  || java -cp "$EXAMPLE_JAR:$SDK_JAR" com.jenkinschina.atom.sdk.AtomRunner
 
 echo "--- output.json"
 cat "$WORK/run/output.json"; echo

@@ -7,11 +7,15 @@
 
 ```xml
 <dependency>
-  <groupId>io.github.hummerstudio</groupId>
+  <groupId>com.jenkinschina</groupId>
   <artifactId>jenkins-atom-sdk</artifactId>
   <version>0.1.0</version>
 </dependency>
 ```
+
+> **发布状态**：还没上传到 Maven Central。现在的用法是 `./build.sh` 出 jar，随原子包一起放进去
+> （`task.json` 的 classpath 里带上 `jenkins-atom-sdk.jar`）。等要公开发布时再看
+> [docs/PUBLISHING.md](docs/PUBLISHING.md)。
 
 ## 一个原子长什么样
 
@@ -42,7 +46,7 @@ public class MyAtom implements AtomTask {
   "atomCode": "my-atom",
   "execution": {
     "language": "java",
-    "target": "$bk_java_path -cp my-atom.jar:jenkins-atom-sdk.jar io.github.hummerstudio.atom.sdk.AtomRunner"
+    "target": "$bk_java_path -cp my-atom.jar:jenkins-atom-sdk.jar com.jenkinschina.atom.sdk.AtomRunner"
   },
   "input": { "msg": { "label": "消息", "type": "vuex-input", "default": "hi" } },
   "output": { "echo": { "type": "string" } },

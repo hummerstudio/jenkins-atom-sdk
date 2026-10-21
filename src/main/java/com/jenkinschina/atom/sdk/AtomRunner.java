@@ -1,4 +1,4 @@
-package io.github.hummerstudio.atom.sdk;
+package com.jenkinschina.atom.sdk;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.ServiceLoader;
 
 /**
- * Entry point an atom jar calls: {@code java -cp atom.jar io.github.hummerstudio.atom.sdk.AtomRunner}.
+ * Entry point an atom jar calls: {@code java -cp atom.jar com.jenkinschina.atom.sdk.AtomRunner}.
  *
  * <p>Contract (identical to BK-CI, so the same runner code path works for both):
  * <ul>
@@ -90,7 +90,7 @@ public final class AtomRunner {
         Iterator<AtomTask> iterator = ServiceLoader.load(AtomTask.class).iterator();
         if (!iterator.hasNext()) {
             throw new IllegalStateException(
-                    "no AtomTask found: add META-INF/services/io.github.hummerstudio.atom.sdk.AtomTask"
+                    "no AtomTask found: add META-INF/services/com.jenkinschina.atom.sdk.AtomTask"
                             + " or set ATOM_TASK_CLASS");
         }
         AtomTask task = iterator.next();

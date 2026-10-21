@@ -1,4 +1,4 @@
-package io.github.hummerstudio.atom.example;
+package com.jenkinschina.atom.example;
 
 public class ExampleParam {
     /** Bound from task.json's input.msg. */

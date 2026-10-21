@@ -1,5 +1,8 @@
 # 发布到 Maven Central（2026 现行流程）
 
+> **状态：暂未发布。** 本文是“将来要发时的路线”，先按这个准备着；不上传不影响任何现有用法
+> （原子包自带 jar 即可）。
+
 Central 旧的 OSSRH staging 已经下线，现在是 **Central Portal**（central.sonatype.com）：
 `mvn -P release deploy` 把 bundle 传上去，校验通过后在页面上点发布（或开 `autoPublish`）。
 
@@ -15,17 +18,15 @@ Central 旧的 OSSRH staging 已经下线，现在是 **Central Portal**（centr
 
 ### 0.1 命名空间
 
-groupId 用 `io.github.hummerstudio`：GitHub 账号的个人命名空间，**不需要自己的域名**，
-但验名时要：
+groupId 是 `com.jenkinschina`，对应已有的 jenkinschina.com，**不需要注册新域名，也不涉及 GitHub 命名空间**。
+验名走 DNS：
 
-1. 在 https://central.sonatype.com → Namespaces → 添加 `io.github.hummerstudio`；
+1. 在 https://central.sonatype.com → Namespaces → 添加 `com.jenkinschina`；
 2. Portal 给你一个 ticket 号（形如 `OSSRH-12345`）；
-3. 在 GitHub 上建一个**公开**空仓库，名字就是 ticket 号：`github.com/hummerstudio/OSSRH-12345`；
-4. 回 Portal 点 Verify，通过后那个空仓库可以删掉。
+3. 在 jenkinschina.com 的 DNS 加一条 TXT 记录：`@  TXT  "OSSRH-12345"`（Cloudflare 上几十秒生效）；
+4. 回 Portal 点 Verify，通过后 TXT 记录可以删掉。
 
-> 如果以后想用 `com.jenkinschina`（有 jenkinschina.com 域名），改名方案是：DNS 加一条
-> `TXT @ "OSSRH-xxxxx"`，Portal 验 DNS。groupId 换了 Java 包名不必跟着换，但换之前要考虑
-> 已有用户的依赖坐标。
+> 换 groupId 的代价：坐标和 Java 包名要一起改（`com.jenkinschina.atom.sdk`），所以**在有人依赖之前**定下来。
 
 ### 0.2 GPG 签名密钥
 

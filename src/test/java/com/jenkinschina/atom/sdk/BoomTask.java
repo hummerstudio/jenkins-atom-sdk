@@ -1,4 +1,4 @@
-package io.github.hummerstudio.atom.sdk;
+package com.jenkinschina.atom.sdk;
 
 public class BoomTask implements AtomTask {
 

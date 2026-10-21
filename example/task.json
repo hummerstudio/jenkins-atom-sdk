@@ -5,7 +5,7 @@
   "execution": {
     "packagePath": "example.jar",
     "language": "java",
-    "target": "$bk_java_path -cp example.jar:jenkins-atom-sdk.jar io.github.hummerstudio.atom.sdk.AtomRunner"
+    "target": "$bk_java_path -cp example.jar:jenkins-atom-sdk.jar com.jenkinschina.atom.sdk.AtomRunner"
   },
   "input": {
     "msg": {"label": "问候语", "type": "vuex-input", "default": "hello", "required": true},

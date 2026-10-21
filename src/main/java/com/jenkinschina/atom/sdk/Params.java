@@ -1,4 +1,4 @@
-package io.github.hummerstudio.atom.sdk;
+package com.jenkinschina.atom.sdk;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;

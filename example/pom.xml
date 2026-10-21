@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>io.github.hummerstudio</groupId>
+  <groupId>com.jenkinschina</groupId>
   <artifactId>jenkins-atom-sdk-example</artifactId>
   <version>0.1.0</version>
   <packaging>jar</packaging>
@@ -18,7 +18,7 @@
   <dependencies>
     <!-- build.sh 先打 sdk jar，再打本模块：离线机器上不必 mvn install -->
     <dependency>
-      <groupId>io.github.hummerstudio</groupId>
+      <groupId>com.jenkinschina</groupId>
       <artifactId>jenkins-atom-sdk</artifactId>
       <version>0.1.0</version>
       <scope>system</scope>
