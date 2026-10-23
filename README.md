@@ -64,8 +64,9 @@ public class MyAtom implements AtomTask {
 
 一个插件包可以包含多个 `AtomTask`（共享代码/依赖，但对外是两个原子）。选择顺序由 `AtomRunner` 决定：
 
-1. `ATOM_TASK_CLASS`（或系统属性 `atom.task.class`）—— 显式指定，优先级最高；对应 `task.json` 里的
-   `x-jenkins.taskClass`，适合"一个 atomCode 换实现"；
+1. `ATOM_TASK_CLASS`（或系统属性 `atom.task.class`）—— 显式指定，优先级最高。这个值来自两处：
+   **job 配置里的「入口类（Task）」下拉框**（runner 读包里的 `META-INF/services` 生成候选），
+   或者 `task.json` 的 `x-jenkins.taskClass` 作为包级默认；
 2. `ATOM_CODE` —— runner 会传当前要执行的 atomCode，SDK 找 `@AtomService` 值相同的那个：
 
    ```java
