@@ -7,8 +7,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Iterator;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 
@@ -79,23 +80,93 @@ public final class AtomRunner {
         return result.isSuccess() ? 0 : 1;
     }
 
+    /**
+     * Picks the implementation to run. A jar may contain several, so the order is:
+     *
+     * <ol>
+     *   <li>{@code atom.task.class} / {@code ATOM_TASK_CLASS}: an explicit class name, always wins;
+     *   <li>{@code atom.code} / {@code ATOM_CODE} / {@code BK_CI_ATOM_CODE}: the task whose
+     *       {@link AtomService#value()} matches, which is how a multi-atom jar stays self-describing;
+     *   <li>exactly one provider in the jar: that one.
+     * </ol>
+     *
+     * <p>Anything ambiguous fails loudly with the candidate list — silently running "the first" is how a jar with
+     * several atoms ends up executing the wrong one.
+     */
     private static AtomTask locateTask(PrintStream out) {
-        String explicit = System.getProperty("atom.task.class");
-        if (explicit == null || explicit.isBlank()) {
-            explicit = System.getenv("ATOM_TASK_CLASS");
+        String explicit = propertyOrEnv("atom.task.class", "ATOM_TASK_CLASS");
+        if (explicit != null) {
+            AtomTask task = instantiate(explicit);
+            out.println("[atom] task " + task.getClass().getName() + " (ATOM_TASK_CLASS)");
+            return task;
         }
-        if (explicit != null && !explicit.isBlank()) {
-            return instantiate(explicit);
+
+        List<AtomTask> providers = new ArrayList<>();
+        for (AtomTask candidate : ServiceLoader.load(AtomTask.class)) {
+            providers.add(candidate);
         }
-        Iterator<AtomTask> iterator = ServiceLoader.load(AtomTask.class).iterator();
-        if (!iterator.hasNext()) {
+        if (providers.isEmpty()) {
             throw new IllegalStateException(
                     "no AtomTask found: add META-INF/services/com.jenkinschina.atom.sdk.AtomTask"
                             + " or set ATOM_TASK_CLASS");
         }
-        AtomTask task = iterator.next();
-        out.println("[atom] task " + task.getClass().getName());
-        return task;
+
+        String atomCode = propertyOrEnv("atom.code", "ATOM_CODE", "BK_CI_ATOM_CODE");
+        if (atomCode != null) {
+            List<AtomTask> matches = new ArrayList<>();
+            for (AtomTask candidate : providers) {
+                if (atomCode.equals(codeOf(candidate))) {
+                    matches.add(candidate);
+                }
+            }
+            if (matches.size() == 1) {
+                out.println("[atom] task " + matches.get(0).getClass().getName() + " (atomCode=" + atomCode + ")");
+                return matches.get(0);
+            }
+            if (matches.size() > 1) {
+                throw new IllegalStateException("several AtomTask implementations claim atomCode='" + atomCode
+                        + "': " + names(matches) + "; disambiguate with ATOM_TASK_CLASS");
+            }
+        }
+
+        if (providers.size() == 1) {
+            out.println("[atom] task " + providers.get(0).getClass().getName());
+            return providers.get(0);
+        }
+        throw new IllegalStateException("this jar has " + providers.size() + " AtomTask implementations ("
+                + names(providers) + ") and none matched atomCode=" + (atomCode == null ? "(unset)" : atomCode)
+                + "; set x-jenkins.taskClass in task.json or ATOM_TASK_CLASS");
+    }
+
+    /** {@code @AtomService("code")}, or the class name when the annotation does not declare one. */
+    private static String codeOf(AtomTask task) {
+        AtomService service = task.getClass().getAnnotation(AtomService.class);
+        if (service != null && !service.value().isBlank()) {
+            return service.value();
+        }
+        return task.getClass().getName();
+    }
+
+    private static String names(List<AtomTask> tasks) {
+        List<String> names = new ArrayList<>();
+        for (AtomTask task : tasks) {
+            names.add(task.getClass().getName() + "(" + codeOf(task) + ")");
+        }
+        return String.join(", ", names);
+    }
+
+    private static String propertyOrEnv(String property, String... envNames) {
+        String value = System.getProperty(property);
+        if (value != null && !value.isBlank()) {
+            return value;
+        }
+        for (String envName : envNames) {
+            String fromEnv = System.getenv(envName);
+            if (fromEnv != null && !fromEnv.isBlank()) {
+                return fromEnv;
+            }
+        }
+        return null;
     }
 
     private static AtomTask instantiate(String className) {

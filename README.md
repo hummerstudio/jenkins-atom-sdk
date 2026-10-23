@@ -60,6 +60,32 @@ public class MyAtom implements AtomTask {
 打包后把 `my-atom.jar` + `jenkins-atom-sdk.jar` + `task.json` 放进插件目录，
 用主仓库的 `tools/publish-atom.sh` 发布到插件中心。
 
+## 一个 jar 里放多个实现
+
+一个插件包可以包含多个 `AtomTask`（共享代码/依赖，但对外是两个原子）。选择顺序由 `AtomRunner` 决定：
+
+1. `ATOM_TASK_CLASS`（或系统属性 `atom.task.class`）—— 显式指定，优先级最高；对应 `task.json` 里的
+   `x-jenkins.taskClass`，适合"一个 atomCode 换实现"；
+2. `ATOM_CODE` —— runner 会传当前要执行的 atomCode，SDK 找 `@AtomService` 值相同的那个：
+
+   ```java
+   @AtomService(value = "sdk-demo", paramClass = DemoParam.class)
+   public class DemoAtom implements AtomTask { ... }
+
+   @AtomService("sdk-demo-alt")
+   public class AltTask implements AtomTask { ... }
+   ```
+3. 只有一个实现时才自动选中。
+
+多个实现且都没匹配上时**直接报错并列出候选**，而不是默默跑第一个：
+
+```
+this jar has 2 AtomTask implementations (…DemoAtom(sdk-demo), …AltTask(sdk-demo-alt))
+and none matched atomCode=xxx; set x-jenkins.taskClass in task.json or ATOM_TASK_CLASS
+```
+
+`example/` 就是一个实现，`jenkins-atom-demo` 仓库演示了两个实现同包。
+
 ## 契约（protocol `jenkins-1`）
 
 | 输入 | 说明 |

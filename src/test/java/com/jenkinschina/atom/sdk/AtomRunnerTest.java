@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -25,9 +26,16 @@ public class AtomRunnerTest {
         return java.nio.file.Files.createDirectories(tmp.resolve(name));
     }
 
+    @BeforeEach
+    public void selectEchoByDefault() {
+        // the test jar ships two implementations; the runner is told which atom is being executed
+        System.setProperty("atom.code", "echo");
+    }
+
     @AfterEach
     public void clearProperty() {
         System.clearProperty("atom.task.class");
+        System.clearProperty("atom.code");
     }
 
     @Test
@@ -86,6 +94,52 @@ public class AtomRunnerTest {
         assertEquals(0, code);
         Map<String, Object> output = Json.parseObject(Files.readString(dir.resolve("output.json")));
         assertEquals("success", output.get("status"));
+    }
+
+    @Test
+    public void picksTheTaskThatDeclaresTheAtomCode() throws Exception {
+        System.clearProperty("atom.code");
+        System.setProperty("atom.code", "boom");
+        Path dir = tmp.resolve("pick");
+        Files.createDirectories(dir);
+
+        int code = AtomRunner.run(dir, "input.json", "output.json",
+                new PrintStream(new ByteArrayOutputStream(), true, "UTF-8"));
+
+        Map<String, Object> output = Json.parseObject(Files.readString(dir.resolve("output.json")));
+        assertTrue(String.valueOf(output.get("message")).contains("boom"), output.toString());
+        assertEquals(1, code);
+    }
+
+    @Test
+    public void anAmbiguousJarFailsInsteadOfGuessing() throws Exception {
+        System.clearProperty("atom.code");
+        Path dir = tmp.resolve("ambiguous");
+        Files.createDirectories(dir);
+        ByteArrayOutputStream console = new ByteArrayOutputStream();
+
+        int code = AtomRunner.run(dir, "input.json", "output.json",
+                new PrintStream(console, true, "UTF-8"));
+
+        assertEquals(1, code);
+        Map<String, Object> output = Json.parseObject(Files.readString(dir.resolve("output.json")));
+        String message = String.valueOf(output.get("message"));
+        assertTrue(message.contains("2 AtomTask implementations"), message);
+        assertTrue(message.contains("EchoTask"), message);
+        assertTrue(message.contains("BoomTask"), message);
+    }
+
+    @Test
+    public void anExplicitClassWinsOverTheAtomCode() throws Exception {
+        System.setProperty("atom.task.class", BoomTask.class.getName());
+        Path dir = tmp.resolve("explicit");
+        Files.createDirectories(dir);
+
+        AtomRunner.run(dir, "input.json", "output.json",
+                new PrintStream(new ByteArrayOutputStream(), true, "UTF-8"));
+
+        Map<String, Object> output = Json.parseObject(Files.readString(dir.resolve("output.json")));
+        assertTrue(String.valueOf(output.get("message")).contains("boom"));
     }
 
     @Test

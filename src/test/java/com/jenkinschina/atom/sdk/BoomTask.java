@@ -1,5 +1,6 @@
 package com.jenkinschina.atom.sdk;
 
+@AtomService("boom")
 public class BoomTask implements AtomTask {
 
     @Override

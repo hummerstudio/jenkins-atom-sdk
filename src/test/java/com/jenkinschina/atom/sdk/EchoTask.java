@@ -3,7 +3,7 @@ package com.jenkinschina.atom.sdk;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-@AtomService(paramClass = DemoParam.class)
+@AtomService(value = "echo", paramClass = DemoParam.class)
 public class EchoTask implements AtomTask {
 
     @Override
