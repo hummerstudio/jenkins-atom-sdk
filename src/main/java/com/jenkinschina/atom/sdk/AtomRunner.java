@@ -18,8 +18,7 @@ import java.util.ServiceLoader;
  *
  * <p>Contract (identical to BK-CI, so the same runner code path works for both):
  * <ul>
- *   <li>reads {@code $atom_data_input} (default {@code input.json}) in {@code $atom_data_dir}
- *       (falls back to the BK-CI names {@code $bk_data_input} / {@code $bk_data_dir});
+ *   <li>reads {@code $atom_data_input} (default {@code input.json}) in {@code $atom_data_dir};
  *   <li>reads {@code .secrets.json} when present — the runner resolves Jenkins credentials before launch;
  *   <li>writes {@code $atom_data_output} (default {@code output.json}) with status / message / errorType / data;
  *   <li>deletes {@code .secrets.json} once the task has run, even when it throws.
@@ -30,9 +29,9 @@ public final class AtomRunner {
     private AtomRunner() {}
 
     public static void main(String[] args) {
-        Path dir = Paths.get(env("bk_data_dir", "."));
-        String inputName = env("bk_data_input", "input.json");
-        String outputName = env("bk_data_output", "output.json");
+        Path dir = Paths.get(env("atom_data_dir", "."));
+        String inputName = env("atom_data_input", "input.json");
+        String outputName = env("atom_data_output", "output.json");
         int code = run(dir, inputName, outputName, System.out);
         if (code != 0) {
             System.exit(code);
@@ -47,9 +46,9 @@ public final class AtomRunner {
             Map<String, Object> params = readParams(dir.resolve(inputName));
             Map<String, String> secrets = readSecrets(secretFile);
             AtomTask task = locateTask(out);
-            Path workspace = Paths.get(params.get("bkWorkspace") instanceof String s
+            Path workspace = Paths.get(params.get("atomWorkspace") instanceof String s
                     ? s
-                    : String.valueOf(params.getOrDefault("bk_workspace", dir.toString())));
+                    : String.valueOf(params.getOrDefault("atom_workspace", dir.toString())));
             AtomContext context = new AtomContext(params, secrets, dir, workspace, out);
             result = task.run(context);
             if (result == null) {
@@ -86,7 +85,7 @@ public final class AtomRunner {
      *
      * <ol>
      *   <li>{@code atom.task.class} / {@code ATOM_TASK_CLASS}: an explicit class name, always wins;
-     *   <li>{@code atom.code} / {@code ATOM_CODE} / {@code BK_CI_ATOM_CODE}: the task whose
+     *   <li>{@code atom.code} / {@code ATOM_CODE}: the task whose
      *       {@link AtomService#value()} matches, which is how a multi-atom jar stays self-describing;
      *   <li>exactly one provider in the jar: that one.
      * </ol>
@@ -112,7 +111,7 @@ public final class AtomRunner {
                             + " or set ATOM_TASK_CLASS");
         }
 
-        String atomCode = propertyOrEnv("atom.code", "ATOM_CODE", "BK_CI_ATOM_CODE");
+        String atomCode = propertyOrEnv("atom.code", "ATOM_CODE");
         if (atomCode != null) {
             List<AtomTask> matches = new ArrayList<>();
             for (AtomTask candidate : providers) {
@@ -208,19 +207,8 @@ public final class AtomRunner {
         return secrets;
     }
 
-    /**
-     * Reads an environment variable, preferring the runner's own {@code atom_*} spelling and falling back to the
-     * BK-CI name ({@code bk_data_dir} → {@code atom_data_dir}) so a package runs unchanged on both.
-     */
     private static String env(String name, String defaultValue) {
-        String value = System.getenv(atomName(name));
-        if (value == null || value.isEmpty()) {
-            value = System.getenv(name);
-        }
+        String value = System.getenv(name);
         return value == null || value.isEmpty() ? defaultValue : value;
-    }
-
-    static String atomName(String name) {
-        return name.startsWith("bk_") ? "atom_" + name.substring("bk_".length()) : name;
     }
 }

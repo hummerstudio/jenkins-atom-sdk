@@ -90,11 +90,11 @@ public final class AtomContext {
     }
 
     public String getAtomCode() {
-        return getParam("BK_CI_ATOM_CODE", "atom");
+        return getParam("ATOM_CODE", "atom");
     }
 
     public String getBuildId() {
-        return getParam("BK_CI_BUILD_ID", "0");
+        return getParam("ATOM_CODE", "0");
     }
 
     public void log(String message) {
