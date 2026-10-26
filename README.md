@@ -46,7 +46,7 @@ public class MyAtom implements AtomTask {
   "atomCode": "my-atom",
   "execution": {
     "language": "java",
-    "target": "$bk_java_path -cp my-atom.jar:jenkins-atom-sdk.jar com.jenkinschina.atom.sdk.AtomRunner"
+    "target": "$atom_java_path -cp my-atom.jar:jenkins-atom-sdk.jar com.jenkinschina.atom.sdk.AtomRunner"
   },
   "input": { "msg": { "label": "消息", "type": "vuex-input", "default": "hi" } },
   "output": { "echo": { "type": "string" } },
@@ -91,8 +91,11 @@ and none matched atomCode=xxx; set x-jenkins.taskClass in task.json or ATOM_TASK
 
 | 输入 | 说明 |
 | --- | --- |
-| `$bk_data_dir` | 工作目录，`input.json` / `output.json` 都在这里 |
-| `$bk_data_input` | 默认 `input.json`，键是表单字段名 + `bk*` 环境变量 |
+| `$atom_data_dir` | 工作目录（也是进程 cwd），`input.json` / `output.json` 都在这里 |
+| `$atom_data_input` | 默认 `input.json`，键是表单字段名 + `bk*` 环境变量 |
+
+规范名是 `atom_data_dir` / `atom_data_input` / `atom_data_output` / `atom_java_path` / `atom_workspace`；
+`bk_data_*` 是 BK-CI 的老名字，SDK 两个都认（先 `atom_*`，再 `bk_*`）。
 | `.secrets.json` | 凭据（键为字段名与 credentials id 两种），**读完即删** |
 
 `output.json`：
