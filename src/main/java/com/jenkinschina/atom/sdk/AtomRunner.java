@@ -18,9 +18,10 @@ import java.util.ServiceLoader;
  *
  * <p>Contract (identical to BK-CI, so the same runner code path works for both):
  * <ul>
- *   <li>reads {@code $bk_data_input} (default {@code input.json}) in {@code $bk_data_dir};
+ *   <li>reads {@code $atom_data_input} (default {@code input.json}) in {@code $atom_data_dir}
+ *       (falls back to the BK-CI names {@code $bk_data_input} / {@code $bk_data_dir});
  *   <li>reads {@code .secrets.json} when present — the runner resolves Jenkins credentials before launch;
- *   <li>writes {@code $bk_data_output} (default {@code output.json}) with status / message / errorType / data;
+ *   <li>writes {@code $atom_data_output} (default {@code output.json}) with status / message / errorType / data;
  *   <li>deletes {@code .secrets.json} once the task has run, even when it throws.
  * </ul>
  */
@@ -207,8 +208,19 @@ public final class AtomRunner {
         return secrets;
     }
 
+    /**
+     * Reads an environment variable, preferring the runner's own {@code atom_*} spelling and falling back to the
+     * BK-CI name ({@code bk_data_dir} → {@code atom_data_dir}) so a package runs unchanged on both.
+     */
     private static String env(String name, String defaultValue) {
-        String value = System.getenv(name);
+        String value = System.getenv(atomName(name));
+        if (value == null || value.isEmpty()) {
+            value = System.getenv(name);
+        }
         return value == null || value.isEmpty() ? defaultValue : value;
+    }
+
+    static String atomName(String name) {
+        return name.startsWith("bk_") ? "atom_" + name.substring("bk_".length()) : name;
     }
 }
