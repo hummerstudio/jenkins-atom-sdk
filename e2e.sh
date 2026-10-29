@@ -2,9 +2,10 @@
 # Runs the example atom exactly like the Jenkins runner does: files in, files out, secrets resolved before launch.
 set -euo pipefail
 cd "$(dirname "$0")"
+VERSION="$(sed -n 's|.*<version>\([^<]*\)</version>.*|\1|p' pom.xml | head -1)"
 
-SDK_JAR="$(pwd)/target/jenkins-atom-sdk-0.1.0.jar"
-EXAMPLE_JAR="$(pwd)/example/target/jenkins-atom-sdk-example-0.1.0.jar"
+SDK_JAR="$(pwd)/target/jenkins-atom-sdk-${VERSION}.jar"
+EXAMPLE_JAR="$(pwd)/example/target/jenkins-atom-sdk-example-${VERSION}.jar"
 [ -f "$SDK_JAR" ] || { echo "missing $SDK_JAR — run ./build.sh first"; exit 1; }
 [ -f "$EXAMPLE_JAR" ] || { echo "missing $EXAMPLE_JAR — run ./build.sh first"; exit 1; }
 

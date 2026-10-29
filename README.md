@@ -130,3 +130,31 @@ mvn -B -ntp test
 ## License
 
 Apache-2.0
+
+## Jenkins 构建上下文（0.3.0）
+
+原子是外部进程，看不到 Jenkins 对象。要读构建日志或构建信息，在 `task.json` 里声明 `x-jenkins.context`，
+然后用 SDK 取值——**不要自己拼文件名**：
+
+```json
+{"x-jenkins": {"protocol": "jenkins-1", "context": ["log", "build"]}}
+```
+
+```java
+public AtomResult run(AtomContext context) throws Exception {
+    if (context.hasBuildLog()) {
+        String log = context.buildLog();                 // 尾部 2 MiB
+    }
+    BuildInfo build = context.build();                   // null＝没声明
+    if (build != null) {
+        String channel = build.getParameter("channel");  // 本次构建的参数
+        String result = build.getResult();               // 还在跑时为空串
+    }
+    context.setBuildName("release-" + context.getParam("BUILD_NUMBER"));
+    context.setBuildDescription("built by " + build.getJob());
+    return AtomResult.success();
+}
+```
+
+改名/写描述是**请求**：`Mutation` 只允许 `displayName` 与 `description` 两个字段，SDK 把它写成
+`mutations.json`，runner 在原子退出后施加并打印；atom 无法通过它修改别的构建属性。

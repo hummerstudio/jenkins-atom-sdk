@@ -6,7 +6,7 @@
 
   <groupId>com.jenkinschina</groupId>
   <artifactId>jenkins-atom-sdk-example</artifactId>
-  <version>0.1.0</version>
+  <version>0.3.0</version>
   <packaging>jar</packaging>
   <name>Jenkins Atom SDK Example</name>
 
@@ -20,9 +20,9 @@
     <dependency>
       <groupId>com.jenkinschina</groupId>
       <artifactId>jenkins-atom-sdk</artifactId>
-      <version>0.1.0</version>
+      <version>0.3.0</version>
       <scope>system</scope>
-      <systemPath>${project.basedir}/../target/jenkins-atom-sdk-0.1.0.jar</systemPath>
+      <systemPath>${project.basedir}/../target/jenkins-atom-sdk-0.3.0.jar</systemPath>
     </dependency>
   </dependencies>
 

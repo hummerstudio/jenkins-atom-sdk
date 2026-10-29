@@ -1,5 +1,6 @@
 package com.jenkinschina.atom.sdk;
 
+import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -104,5 +105,82 @@ public final class AtomContext {
     /** Groups related log lines in the Jenkins console (collapsed until expanded). */
     public void group(String name) {
         out.println("[atom] === " + name + " ===");
+    }
+
+    // ---------------------------------------------------------------- Jenkins build data
+
+    /** Param name the runner uses for the build log it hands over ({@code x-jenkins.context: ["log"]}). */
+    public static final String BUILD_LOG_PARAM = "atom_build_log";
+
+    /** Param name the runner uses for the build metadata file ({@code x-jenkins.context: ["build"]}). */
+    public static final String BUILD_JSON_PARAM = "atom_build_json";
+
+    /** True when the task declared {@code x-jenkins.context: ["log"]}; reading the log is a privilege, not a default. */
+    public boolean hasBuildLog() {
+        String name = getParam(BUILD_LOG_PARAM, System.getenv().getOrDefault(BUILD_LOG_PARAM, ""));
+        return !name.isBlank() && java.nio.file.Files.isRegularFile(dataDir.resolve(name));
+    }
+
+    /**
+     * The build log as far as it has been written — the last two megabytes — or an empty string when the atom did not
+     * declare it. The file name belongs to the runner, which is why atoms ask instead of opening files.
+     */
+    public String buildLog() {
+        String name = getParam(BUILD_LOG_PARAM, System.getenv().getOrDefault(BUILD_LOG_PARAM, ""));
+        if (name.isBlank()) {
+            return "";
+        }
+        Path file = dataDir.resolve(name);
+        try {
+            return java.nio.file.Files.isRegularFile(file)
+                    ? java.nio.file.Files.readString(file, java.nio.charset.StandardCharsets.UTF_8)
+                    : "";
+        } catch (IOException e) {
+            log("cannot read the build log: " + e.getMessage());
+            return "";
+        }
+    }
+
+    /**
+     * The build this atom runs in, or {@code null} when it did not declare {@code x-jenkins.context: ["build"]}.
+     * Read-only: an atom may look, and change the name/description through {@link #mutate(Mutation)}.
+     */
+    public BuildInfo build() {
+        String name = getParam(BUILD_JSON_PARAM, System.getenv().getOrDefault(BUILD_JSON_PARAM, ""));
+        if (name.isBlank()) {
+            return null;
+        }
+        Path file = dataDir.resolve(name);
+        if (!java.nio.file.Files.isRegularFile(file)) {
+            return null;
+        }
+        try {
+            return BuildInfo.parse(Json.parseObject(
+                    java.nio.file.Files.readString(file, java.nio.charset.StandardCharsets.UTF_8)));
+        } catch (IOException | RuntimeException e) {
+            log("cannot read the build metadata: " + e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Asks the runner to rename the build and/or set its description. The request is written next to the outputs and
+     * applied after the atom exits; the runner prints what it changed.
+     */
+    public void mutate(Mutation mutation) throws IOException {
+        if (mutation == null || mutation.isEmpty()) {
+            return;
+        }
+        mutation.writeTo(dataDir);
+    }
+
+    /** Shorthand for {@code mutate(Mutation.displayName(name))}. */
+    public void setBuildName(String displayName) throws IOException {
+        mutate(Mutation.displayName(displayName));
+    }
+
+    /** Shorthand for {@code mutate(Mutation.description(text))}. */
+    public void setBuildDescription(String description) throws IOException {
+        mutate(Mutation.description(description));
     }
 }
