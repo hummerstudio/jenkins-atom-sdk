@@ -57,6 +57,17 @@ public final class AtomResult {
     }
 
     /** A string output that is masked in the build page and logs. */
+    /**
+     * Ask the runner to mark the build UNSTABLE, without failing the step.
+     *
+     * <p>This is a separate channel from {@code status}: an atom can do its job perfectly and still have something to
+     * report (tests failed, coverage dropped). Jenkins plugins expressed this by calling {@code run.setResult}; an atom
+     * cannot, so it writes the reserved output {@code build.result} and the runner applies it.
+     */
+    public AtomResult markUnstable() {
+        return data("build.result", "UNSTABLE");
+    }
+
     public AtomResult sensitiveData(String key, String value) {
         Map<String, Object> field = new LinkedHashMap<>();
         field.put("type", "string");
