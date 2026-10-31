@@ -31,5 +31,4 @@ jobs:
       - name: Assert release artifacts exist
         run: |
           ls -l target/*.jar
-          test -f target/jenkins-atom-sdk-0.1.0-sources.jar
-          test -f target/jenkins-atom-sdk-0.1.0-javadoc.jar
+          ls -l target/*-sources.jar target/*-javadoc.jar

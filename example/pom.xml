@@ -13,6 +13,8 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>17</maven.compiler.release>
+    <!-- the example follows the SDK it is built against; a hardcoded version here is how CI broke silently -->
+    <sdk.version>0.5.1</sdk.version>
   </properties>
 
   <dependencies>
@@ -20,9 +22,9 @@
     <dependency>
       <groupId>com.jenkinschina</groupId>
       <artifactId>jenkins-atom-sdk</artifactId>
-      <version>0.3.0</version>
+      <version>${sdk.version}</version>
       <scope>system</scope>
-      <systemPath>${project.basedir}/../target/jenkins-atom-sdk-0.3.0.jar</systemPath>
+      <systemPath>${project.basedir}/../target/jenkins-atom-sdk-${sdk.version}.jar</systemPath>
     </dependency>
   </dependencies>
 
