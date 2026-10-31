@@ -31,6 +31,12 @@ public final class Glob {
     /** Files a walk will look at before it gives up: a runaway pattern should not hang a build. */
     public static final int MAX_FILES = 20000;
 
+    /**
+     * The runner keeps the atom's own package and its json files here, inside the workspace. A pattern like
+     * {@code **&#47;*.jar} would otherwise match the atom's own jar and publish that.
+     */
+    public static final String RUNNER_DIR = ".atoms";
+
     private Glob() {}
 
     /** Whether a workspace-relative path matches any of the comma-separated patterns. */
@@ -54,6 +60,14 @@ public final class Glob {
 
     /** Every regular file under {@code workspace} whose relative path matches, sorted, capped at {@link #MAX_FILES}. */
     public static List<Path> find(Path workspace, String patterns) throws IOException {
+        return find(workspace, patterns, false);
+    }
+
+    /**
+     * @param includeRunnerFiles whether files under {@link #RUNNER_DIR} count as workspace content; only an atom
+     *     inspecting the runner's own directory wants that
+     */
+    public static List<Path> find(Path workspace, String patterns, boolean includeRunnerFiles) throws IOException {
         List<PathMatcher> compiled = matchers(patterns);
         if (compiled.isEmpty()) {
             return List.of();
@@ -63,6 +77,10 @@ public final class Glob {
             walk.filter(Files::isRegularFile)
                     .filter(path -> {
                         Path relative = workspace.relativize(path);
+                        if (!includeRunnerFiles && relative.getNameCount() > 0
+                                && RUNNER_DIR.equals(relative.getName(0).toString())) {
+                            return false;
+                        }
                         String text = relative.toString().replace('\\', '/');
                         for (PathMatcher matcher : compiled) {
                             if (matcher.matches(Path.of(text)) || matcher.matches(relative.getFileName())) {

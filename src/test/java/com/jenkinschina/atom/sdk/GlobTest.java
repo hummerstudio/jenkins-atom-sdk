@@ -67,6 +67,20 @@ class GlobTest {
     }
 
     @Test
+    void theRunnersOwnDirectoryIsNotTreatedAsContent(@TempDir Path workspace) throws Exception {
+        Files.createDirectories(workspace.resolve(".atoms/chat-notify-1"));
+        Files.writeString(workspace.resolve(".atoms/chat-notify-1/chat-notify.jar"), "the atom");
+        Files.createDirectories(workspace.resolve("build"));
+        Files.writeString(workspace.resolve("build/app.jar"), "the output");
+
+        List<Path> found = Glob.find(workspace, "**/*.jar");
+        assertEquals(1, found.size(), "the atom's own package must not match");
+        assertEquals("build/app.jar", workspace.relativize(found.get(0)).toString());
+
+        assertEquals(2, Glob.find(workspace, "**/*.jar", true).size(), "an atom may ask for them explicitly");
+    }
+
+    @Test
     void nothingIsMatchedWithoutAPattern(@TempDir Path workspace) throws Exception {
         Files.writeString(workspace.resolve("x.txt"), "1");
         assertTrue(Glob.find(workspace, "").isEmpty());
