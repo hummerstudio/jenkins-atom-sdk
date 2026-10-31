@@ -1,0 +1,1 @@
+{"status":"success","message":"greeted","data":{"greeting":{"type":"string","value":"hello"},"files":{"type":"artifact","value":["./out/greeting.txt"]},"report":{"type":"report","label":"问候报告","path":"./out/report","target":"index.html"}}}

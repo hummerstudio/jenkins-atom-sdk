@@ -6,7 +6,7 @@
 
   <groupId>com.jenkinschina</groupId>
   <artifactId>jenkins-atom-sdk-example</artifactId>
-  <version>0.3.0</version>
+  <version>${sdk.version}</version>
   <packaging>jar</packaging>
   <name>Jenkins Atom SDK Example</name>
 
