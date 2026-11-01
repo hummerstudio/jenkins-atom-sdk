@@ -14,7 +14,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>17</maven.compiler.release>
     <!-- the example follows the SDK it is built against; a hardcoded version here is how CI broke silently -->
-    <sdk.version>0.5.1</sdk.version>
+    <sdk.version>0.6.0</sdk.version>
   </properties>
 
   <dependencies>
