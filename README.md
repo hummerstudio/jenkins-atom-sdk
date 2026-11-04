@@ -87,6 +87,22 @@ and none matched atomCode=xxx; set x-jenkins.taskClass in task.json or ATOM_TASK
 
 `example/` 就是一个实现，`jenkins-atom-demo` 仓库演示了两个实现同包。
 
+## 日志前缀
+
+SDK 打的每一行都带上是哪个原子写的：`[atom:<atomCode>:<版本>]`，例如
+
+```
+[atom:git-checkout:1.1.0] task com.jenkinschina.atom.gitcheckout.GitCheckoutAtom
+[atom:git-checkout:1.1.0] === 拉取 ===
+[atom:git-checkout:1.1.0] status=success message=cloned
+```
+
+`context.log(...)` / `context.group(...)` 以及运行器自己的 `task` / `status` / `ERROR` 行都走这个前缀，所以一个
+控制台里跑多个原子时能分清谁说的。code 和版本来自 runner 的 `ATOM_CODE` / `atom_version`（也可以
+`-Datom.code=… -Datom.version=…`）；手工启动、两个都没给时退回旧的 `[atom]`。
+
+**注意**：前缀在 SDK 里，原子 jar 打包时会带上当时那份 SDK —— 已经发布的旧 jar 仍打旧前缀，重新打包才生效。
+
 ## 契约（protocol `jenkins-1`）
 
 | 输入 | 说明 |

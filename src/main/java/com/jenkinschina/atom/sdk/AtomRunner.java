@@ -55,7 +55,7 @@ public final class AtomRunner {
                 result = AtomResult.failure("atom returned null instead of an AtomResult");
             }
         } catch (Throwable t) {
-            out.println("[atom] ERROR " + t);
+            AtomLog.println(out, "ERROR " + t);
             t.printStackTrace(out);
             result = AtomResult.error(ErrorType.PLUGIN, 1, t.getClass().getSimpleName() + ": " + t.getMessage());
         } finally {
@@ -72,10 +72,10 @@ public final class AtomRunner {
                     Json.write(result.toJson()),
                     StandardCharsets.UTF_8);
         } catch (IOException e) {
-            out.println("[atom] cannot write " + outputName + ": " + e);
+            AtomLog.println(out, "cannot write " + outputName + ": " + e);
             return 1;
         }
-        out.println("[atom] status=" + result.getStatus()
+        AtomLog.println(out, "status=" + result.getStatus()
                 + (result.getMessage() == null ? "" : " message=" + result.getMessage()));
         return result.isSuccess() ? 0 : 1;
     }
@@ -97,7 +97,7 @@ public final class AtomRunner {
         String explicit = propertyOrEnv("atom.task.class", "ATOM_TASK_CLASS");
         if (explicit != null) {
             AtomTask task = instantiate(explicit);
-            out.println("[atom] task " + task.getClass().getName() + " (ATOM_TASK_CLASS)");
+            AtomLog.println(out, "task " + task.getClass().getName() + " (ATOM_TASK_CLASS)");
             return task;
         }
 
@@ -120,7 +120,7 @@ public final class AtomRunner {
                 }
             }
             if (matches.size() == 1) {
-                out.println("[atom] task " + matches.get(0).getClass().getName() + " (atomCode=" + atomCode + ")");
+                AtomLog.println(out, "task " + matches.get(0).getClass().getName() + " (atomCode=" + atomCode + ")");
                 return matches.get(0);
             }
             if (matches.size() > 1) {
@@ -130,7 +130,7 @@ public final class AtomRunner {
         }
 
         if (providers.size() == 1) {
-            out.println("[atom] task " + providers.get(0).getClass().getName());
+            AtomLog.println(out, "task " + providers.get(0).getClass().getName());
             return providers.get(0);
         }
         throw new IllegalStateException("this jar has " + providers.size() + " AtomTask implementations ("

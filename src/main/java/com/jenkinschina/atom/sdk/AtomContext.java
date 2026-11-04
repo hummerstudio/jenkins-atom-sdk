@@ -99,12 +99,12 @@ public final class AtomContext {
     }
 
     public void log(String message) {
-        out.println("[atom] " + message);
+        AtomLog.println(out, message);
     }
 
     /** Groups related log lines in the Jenkins console (collapsed until expanded). */
     public void group(String name) {
-        out.println("[atom] === " + name + " ===");
+        AtomLog.println(out, "=== " + name + " ===");
     }
 
     // ---------------------------------------------------------------- Jenkins build data
