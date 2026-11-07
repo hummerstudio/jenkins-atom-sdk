@@ -6,7 +6,7 @@
 
   <groupId>com.jenkinschina.atoms</groupId>
   <artifactId>atoms-parent</artifactId>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
   <packaging>pom</packaging>
 
   <name>Atoms parent</name>
@@ -36,6 +36,8 @@
     <maven.compiler.release>21</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <atom.sdk.version>0.6.1</atom.sdk.version>
+    <!-- the scanner does not guess this path on its own; without it every project reports 0% coverage -->
+    <sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
     <!-- the private repository this machine runs; override with -Datoms.repository.url=… to publish elsewhere -->
     <atoms.repository.url>http://127.0.0.1:8081/repository/maven-releases/</atoms.repository.url>
     <!-- the jar name task.json's packagePath declares; an atom may override it -->
@@ -50,6 +52,28 @@
       <groupId>com.jenkinschina</groupId>
       <artifactId>jenkins-atom-sdk</artifactId>
       <version>${atom.sdk.version}</version>
+    </dependency>
+    <!-- the tests are ordinary JUnit tests; the harness that starts the atom lives in the SDK's test-jar -->
+    <dependency>
+      <groupId>com.jenkinschina</groupId>
+      <artifactId>jenkins-atom-sdk</artifactId>
+      <version>${atom.sdk.version}</version>
+      <type>test-jar</type>
+      <classifier>tests</classifier>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jacoco</groupId>
+      <artifactId>org.jacoco.agent</artifactId>
+      <version>0.8.13</version>
+      <classifier>runtime</classifier>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.12.0</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
@@ -69,14 +93,63 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
+        <version>3.4.2</version>
         <configuration>
           <finalName>${atom.jar.name}</finalName>
         </configuration>
       </plugin>
 
+            <!--
+              The atom's tests are JUnit tests that start the packaged jar the way the runner does. They need the jar, so
+              they run in integration-test/verify — surefire's phase — rather than at test time.
+            -->
+            <!--
+              Coverage comes from the JVM that runs the atom, not from the test JVM: the harness passes the agent in
+              (see Atom#run), the agent appends to target/jacoco.exec on every run, and this report turns it into the XML
+              SonarQube reads at target/site/jacoco/jacoco.xml.
+            -->
+            <plugin>
+              <groupId>org.jacoco</groupId>
+              <artifactId>jacoco-maven-plugin</artifactId>
+              <version>0.8.13</version>
+              <executions>
+                <execution>
+                  <id>report</id>
+                  <phase>verify</phase>
+                  <goals><goal>report</goal></goals>
+                  <configuration>
+                    <dataFile>${project.build.directory}/jacoco.exec</dataFile>
+                  </configuration>
+                </execution>
+              </executions>
+            </plugin>
+
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-failsafe-plugin</artifactId>
+              <version>3.5.2</version>
+              <configuration>
+                <systemPropertyVariables>
+                  <atom.module>${project.basedir}</atom.module>
+                  <atom.scratch>${project.build.directory}</atom.scratch>
+                  <!-- the atom runs in its own JVM, so its coverage is collected there and merged into one file -->
+                  <jacoco.destfile>${project.build.directory}/jacoco.exec</jacoco.destfile>
+                </systemPropertyVariables>
+              </configuration>
+              <executions>
+                <execution>
+                  <goals>
+                    <goal>integration-test</goal>
+                    <goal>verify</goal>
+                  </goals>
+                </execution>
+              </executions>
+            </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-deploy-plugin</artifactId>
+        <version>3.1.4</version>
         <configuration>
           <!-- the jar is a plain library; the package the centre installs is the zip built from dist -->
           <skip>false</skip>
@@ -134,6 +207,7 @@
                           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-antrun-plugin</artifactId>
+            <version>3.1.0</version>
             <executions>
               <execution>
                 <id>assemble-dist</id>
@@ -153,31 +227,6 @@
                       </fileset>
                     </copy>
                   </target>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-
-          <!--
-            The atom's smoke script is its integration test: it drives the packaged jar through the runner's contract
-            (environment, input.json, exit code, output.json). It runs after package because it needs the jar, which is
-            what failsafe/integration-test exists for — `mvn verify` is the one command.
-          -->
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>exec-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>smoke</id>
-                <phase>integration-test</phase>
-                <goals><goal>exec</goal></goals>
-                <configuration>
-                  <skip>${atom.smoke.skip}</skip>
-                  <workingDirectory>${project.basedir}</workingDirectory>
-                  <executable>${atom.smoke.script}</executable>
-                  <environmentVariables>
-                    <ATOM_JAR>${project.build.directory}/dist/${project.artifactId}/${atom.jar.name}.jar</ATOM_JAR>
-                  </environmentVariables>
                 </configuration>
               </execution>
             </executions>
