@@ -37,6 +37,8 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <atom.sdk.version>0.6.1</atom.sdk.version>
     <!-- the scanner does not guess this path on its own; without it every project reports 0% coverage -->
+    <!-- line coverage the build insists on; an atom with no logic of its own sets it to 0 -->
+    <coverage.min.line>0.80</coverage.min.line>
     <sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
     <!-- the private repository this machine runs; override with -Datoms.repository.url=… to publish elsewhere -->
     <atoms.repository.url>http://127.0.0.1:8081/repository/maven-releases/</atoms.repository.url>
@@ -119,6 +121,26 @@
                   <goals><goal>report</goal></goals>
                   <configuration>
                     <dataFile>${project.build.directory}/jacoco.exec</dataFile>
+                  </configuration>
+                </execution>
+                <execution>
+                  <id>jacoco-check</id>
+                  <phase>verify</phase>
+                  <goals><goal>check</goal></goals>
+                  <configuration>
+                    <dataFile>${project.build.directory}/jacoco.exec</dataFile>
+                    <rules>
+                      <rule>
+                        <element>BUNDLE</element>
+                        <limits>
+                          <limit>
+                            <counter>LINE</counter>
+                            <value>COVEREDRATIO</value>
+                            <minimum>${coverage.min.line}</minimum>
+                          </limit>
+                        </limits>
+                      </rule>
+                    </rules>
                   </configuration>
                 </execution>
               </executions>
