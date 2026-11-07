@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.jenkinschina.atoms</groupId>
+  <artifactId>atoms-parent</artifactId>
+  <version>1.0.0</version>
+  <packaging>pom</packaging>
+
+  <name>Atoms parent</name>
+  <description>
+    One build for every atom: the SDK is an ordinary Maven dependency, the jar keeps the name task.json declares, and
+    the atom's own smoke script runs as an integration test so `mvn verify` means "this atom still honours the
+    contract".
+  </description>
+  <url>https://github.com/hummerstudio/jenkins-atom-build</url>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <developers>
+    <developer>
+      <id>hummerstudio</id>
+      <name>hummerstudio</name>
+      <url>https://github.com/hummerstudio</url>
+    </developer>
+  </developers>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <atom.sdk.version>0.6.1</atom.sdk.version>
+    <!-- the private repository this machine runs; override with -Datoms.repository.url=… to publish elsewhere -->
+    <atoms.repository.url>http://127.0.0.1:8081/repository/maven-releases/</atoms.repository.url>
+    <!-- the jar name task.json's packagePath declares; an atom may override it -->
+    <atom.jar.name>${project.artifactId}</atom.jar.name>
+    <!-- the atom's regression script; skipped when a repository has none -->
+    <atom.smoke.script>${project.basedir}/tools/smoke.sh</atom.smoke.script>
+  </properties>
+
+  <dependencies>
+    <!-- the whole point: the SDK is declared here, resolved from the repository, not copied from a sibling checkout -->
+    <dependency>
+      <groupId>com.jenkinschina</groupId>
+      <artifactId>jenkins-atom-sdk</artifactId>
+      <version>${atom.sdk.version}</version>
+    </dependency>
+  </dependencies>
+
+  <distributionManagement>
+    <repository>
+      <id>atoms</id>
+      <url>${atoms.repository.url}</url>
+    </repository>
+    <snapshotRepository>
+      <id>atoms</id>
+      <url>${atoms.repository.url}</url>
+    </snapshotRepository>
+  </distributionManagement>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <finalName>${atom.jar.name}</finalName>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <configuration>
+          <!-- the jar is a plain library; the package the centre installs is the zip built from dist -->
+          <skip>false</skip>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <!--
+      Everything that turns a jar into an atom package lives here, and this profile is what decides whether a build is
+      an atom at all: a directory with a task.json. The parent itself has none, so installing the parent does not try
+      to assemble a package for it.
+    -->
+    <profile>
+      <id>atom</id>
+      <activation>
+        <file><exists>${basedir}/task.json</exists></file>
+      </activation>
+      <build>
+        <plugins>
+      <!--
+            task.json and ui.json ship next to the jar, in dist/<code>/ — the layout the runner installs. The jar is
+            copied under the name task.json's execution.packagePath declares, so the package is the one the centre expects.
+          -->
+<!--
+              The runner starts the atom with `-cp <jar>` only, so the SDK has to travel inside the jar — that is what
+              build.sh did by unzipping it. The shade plugin is the Maven way, and the services transformer keeps the
+              META-INF/services entry that tells the SDK which AtomTask to run.
+            -->
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-shade-plugin</artifactId>
+              <version>3.6.0</version>
+              <executions>
+                <execution>
+                  <phase>package</phase>
+                  <goals><goal>shade</goal></goals>
+                  <configuration>
+                    <createDependencyReducedPom>false</createDependencyReducedPom>
+                    <finalName>${atom.jar.name}</finalName>
+                    <artifactSet>
+                      <includes>
+                        <include>com.jenkinschina:jenkins-atom-sdk</include>
+                      </includes>
+                    </artifactSet>
+                    <transformers>
+                      <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                    </transformers>
+                  </configuration>
+                </execution>
+              </executions>
+            </plugin>
+
+                          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>assemble-dist</id>
+                <phase>package</phase>
+                <goals><goal>run</goal></goals>
+                <configuration>
+                  <target>
+                    <mkdir dir="${project.build.directory}/dist/${project.artifactId}"/>
+                    <copy file="${project.build.directory}/${atom.jar.name}.jar"
+                          tofile="${project.build.directory}/dist/${project.artifactId}/${atom.jar.name}.jar"/>
+                    <!-- a fileset, not two <copy file=…>: ui.json is optional and a missing file must not warn -->
+                    <copy todir="${project.build.directory}/dist/${project.artifactId}">
+                      <fileset dir="${project.basedir}">
+                        <include name="task.json"/>
+                        <include name="ui.json"/>
+                    <include name="meta.json"/>
+                      </fileset>
+                    </copy>
+                  </target>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+          <!--
+            The atom's smoke script is its integration test: it drives the packaged jar through the runner's contract
+            (environment, input.json, exit code, output.json). It runs after package because it needs the jar, which is
+            what failsafe/integration-test exists for — `mvn verify` is the one command.
+          -->
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>smoke</id>
+                <phase>integration-test</phase>
+                <goals><goal>exec</goal></goals>
+                <configuration>
+                  <skip>${atom.smoke.skip}</skip>
+                  <workingDirectory>${project.basedir}</workingDirectory>
+                  <executable>${atom.smoke.script}</executable>
+                  <environmentVariables>
+                    <ATOM_JAR>${project.build.directory}/dist/${project.artifactId}/${atom.jar.name}.jar</ATOM_JAR>
+                  </environmentVariables>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+        </plugins>
+      </build>
+    </profile>
+
+    <!-- repositories with no smoke script set this to skip the execution -->
+    <profile>
+      <id>no-smoke</id>
+      <properties>
+        <atom.smoke.skip>true</atom.smoke.skip>
+      </properties>
+    </profile>
+  </profiles>
+
+</project>

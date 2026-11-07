@@ -150,4 +150,15 @@
       </build>
     </profile>
   </profiles>
+  <distributionManagement>
+    <repository>
+      <id>atoms</id>
+      <url>http://127.0.0.1:8081/repository/maven-releases/</url>
+    </repository>
+    <snapshotRepository>
+      <id>atoms</id>
+      <url>http://127.0.0.1:8081/repository/maven-releases/</url>
+    </snapshotRepository>
+  </distributionManagement>
+
 </project>
